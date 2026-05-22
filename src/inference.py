@@ -10,6 +10,11 @@ import pandas as pd
 from utils import *
 
 # if __name__ == "__main__":
+from huggingface_hub import login
+HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
+login(HUGGINGFACE_TOKEN)
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--input_path', default="", type=str)
 parser.add_argument('--model_path', default="/scratch/gpfs/yl7690/models/Translator_Qwen2.5-Coder-32B_numina_sonnet_130K_translator_Epoch2_LR1e-4", type=str)

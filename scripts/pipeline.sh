@@ -32,6 +32,7 @@ set -e
 # DATA_PATH="path/to/your/input_problems.jsonl" # Path to your input problems file (e.g., minif2f.jsonl)
 MODEL_PATH="Goedel-LM/Goedel-Prover-V2-8B"
 DATA_PATH="dataset/test.jsonl" # Example path
+DATA_PATH="dataset/data200.jsonl"
 
 # --- Output Directory ---
 # All generated files (inference results, compilation logs, reports) will be saved here.
@@ -40,11 +41,11 @@ BASE_OUTPUT_DIR="results/run_${TIMESTAMP}"
 
 # --- Inference Settings ---
 INFERENCE_HANDLER="dpskcot" # Inference handler, options: "dpskcot", "dpsknoncot", "kiminacot"
-GPUS=4                    # Number of GPUs to use for vLLM inference
+GPUS=1                    # Number of GPUs to use for vLLM inference
 NUM_SAMPLES_INITIAL=8     # Number of proof samples to generate per problem in the initial round (Round 0)
 NUM_SAMPLES_CORRECTION=2  # Number of correction samples to generate per failed attempt in correction rounds (Round > 0)
 TEMPERATURE=1.0           # Inference temperature
-MAX_MODEL_LEN=40960       # Maximum model sequence length
+MAX_MODEL_LEN=4096       # Maximum model sequence length
 
 # --- Compilation Settings ---
 CPUS=32                   # Number of CPU cores to use for parallel compilation
