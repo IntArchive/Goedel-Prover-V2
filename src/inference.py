@@ -80,7 +80,7 @@ else:  # Initial inference (Round 0)
 
     for idata_orig in initial_data_list:
         origin_id = idata_orig.get("origin_problem_id", idata_orig.get('problem_id', idata_orig.get('name')))
-        if not idata_orig.get("lean4_code"): continue
+        # if not idata_orig.get("lean4_code"): continue
         for ij in range(args.n):
             item_for_attempt = idata_orig.copy() 
             item_for_attempt["origin_problem_id"] = origin_id
