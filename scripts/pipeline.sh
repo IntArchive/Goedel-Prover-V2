@@ -31,7 +31,7 @@ set -e
 # MODEL_PATH="/path/to/your/llm/model"  # Path to your Large Language Model
 # DATA_PATH="path/to/your/input_problems.jsonl" # Path to your input problems file (e.g., minif2f.jsonl)
 MODEL_PATH="Goedel-LM/Goedel-Prover-V2-8B"
-DATA_PATH="dataset/test.jsonl" # Example path
+# DATA_PATH="dataset/test.jsonl" # Example path
 DATA_PATH="dataset/data200.jsonl"
 
 # --- Output Directory ---
@@ -45,10 +45,11 @@ GPUS=1                    # Number of GPUs to use for vLLM inference
 NUM_SAMPLES_INITIAL=8     # Number of proof samples to generate per problem in the initial round (Round 0)
 NUM_SAMPLES_CORRECTION=2  # Number of correction samples to generate per failed attempt in correction rounds (Round > 0)
 TEMPERATURE=1.0           # Inference temperature
-MAX_MODEL_LEN=4096       # Maximum model sequence length
+MAX_MODEL_LEN=40960       # Maximum model sequence length
+TEST="test"
 
 # --- Compilation Settings ---
-CPUS=32                   # Number of CPU cores to use for parallel compilation
+CPUS=44                   # Number of CPU cores to use for parallel compilation
 
 # --- Pipeline Control ---
 # Maximum number of correction rounds (0 for initial inference only, 1 for initial + one correction round, etc.)
@@ -91,6 +92,7 @@ for round in $(seq 0 $MAX_CORRECTION_ROUNDS); do
         --output_dir ${BASE_OUTPUT_DIR} \
         --n ${NUM_SAMPLES} \
         --gpu ${GPUS} \
+        --split ${TEST} \
         --inference_handler ${INFERENCE_HANDLER} \
         --correction_round ${round} \
         --max_model_len ${MAX_MODEL_LEN} \
