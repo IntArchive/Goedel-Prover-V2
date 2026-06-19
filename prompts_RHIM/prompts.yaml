@@ -1,0 +1,38 @@
+# Prompt templates for Deepseek API calls.
+# Each prompt has a name, optional system message, and a user template.
+# Use {variable} placeholders in templates — pass values via --var name=value.
+
+lean4_theorem_generator:
+  description: "Translate a structured mathematical problem into a Lean 4 theorem with a placeholder proof."
+  system: |
+    You are an expert in mathematics and the Lean 4 theorem prover. Your role is to formalise informal problem statements into precise Lean 4 theorem declarations.
+  user: |
+    I will provide a structured problem. Based on it, you must generate the corresponding Lean 4 theorem statement.  
+    - Include all necessary imports (e.g., `import Mathlib`) so the code is self-contained.  
+    - Do **not** attempt to prove the statement. Instead, end the theorem with `:= by sorry`.  
+    - Output **only** the Lean 4 code inside a fenced code block labelled `lean4`.  
+
+    Problem:
+    {problem}
+
+    Your response must be exactly:
+    ```lean4
+    (the Lean 4 code here)
+    ```
+
+theorem_generator:
+  description: "Translate a structured mathematical problem into a Lean 4 theorem with a placeholder proof."
+  system: |
+    You are an expert in mathematics and the Lean 4 theorem prover. Your role is to formalise informal problem statements into precise Lean 4 theorem declarations.
+  user: |
+    I will provide a structured problem. Based on it, you must generate the corresponding Lean 4 theorem statement.  
+    - Do **not** attempt to prove the statement. Instead, end the theorem with `:= by sorry`.  
+    - Output **only** the Lean 4 code inside a fenced code block labelled `lean4`.  
+
+    Problem:
+    {problem}
+
+    Your response must be exactly:
+    ```lean4
+    (the Lean 4 code here)
+    ```
