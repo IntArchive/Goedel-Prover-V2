@@ -21,7 +21,7 @@ lean4_theorem_generator:
     ```
 
 theorem_generator:
-  description: "Translate a structured mathematical problem into a Lean 4 theorem with a placeholder proof."
+  description: "Translate a structured mathematical problem into a Lean 4 theorem with a placeholder proof. Please carefully consider and add necessary premises such that the problem statement are true, dense and general. Only need write exactly one Lean4 snippet which contain problem statement. Don't need solve or analyze problem for solving process."
   system: |
     You are an expert in mathematics and the Lean 4 theorem prover. Your role is to formalise informal problem statements into precise Lean 4 theorem declarations.
   user: |
@@ -34,5 +34,5 @@ theorem_generator:
 
     Your response must be exactly:
     ```lean4
-    (the Lean 4 code here)
+    (the Lean 4 code problem statement should be let in lean4 snippet here)
     ```

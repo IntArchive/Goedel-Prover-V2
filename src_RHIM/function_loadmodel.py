@@ -51,11 +51,11 @@ def build_message(prompt_template: dict, variables: dict) -> list[dict]:
 def main():
 ############ Step 1: Prepare tokenizer and model
 # Define your text generation hyperparameters
-    sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=4096)
+    sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=30720)
 
 # Initialize the model (vLLM downloads it automatically from Hugging Face if not cached)
-    model_id = "Goedel-LM/Goedel-Prover-V2-8B"
-    llm = LLM(model=model_id, seed=42, trust_remote_code=True, max_model_len=8196, tensor_parallel_size=1, pipeline_parallel_size=1, distributed_executor_backend="ray")
+    model_id = "Goedel-LM/Goedel-Prover-V2-32B"
+    llm = LLM(model=model_id, seed=42, trust_remote_code=True, max_model_len=40960, tensor_parallel_size=1, pipeline_parallel_size=1, distributed_executor_backend="ray")
     hf_tokenizer_for_chat_template = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 
 ############ Step 2: Prepare data 
@@ -97,7 +97,7 @@ def main():
 
     args = parser.parse_args()
     data = load_dataframe(args.file_path)
-    data = data.iloc[:4,:]
+    data = data.iloc[:20,:]
     problems = load_concerned_column(data, args.column)
     prompts = load_prompts(args.prompts_file)
     prompt_template = prompts[args.prompt] 
