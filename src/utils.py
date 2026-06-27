@@ -199,7 +199,6 @@ def return_theorem_to_prove(text):
     match = re.search(pattern, text, re.DOTALL)
     return match.span() if match else None
 
-
 def return_theorem_to_replace(text):
     # Pattern that matches from 'theorem' or 'lemma' to ':= by sorry' with any content in between
     # pattern = r'((?:theorem).*?:=\s*by)'
@@ -315,7 +314,6 @@ class InferenceHandler:
         
         return full_code
 
-
 class DeepSeekCoTHandler(InferenceHandler):
     def __init__(self):
         pass 
@@ -336,9 +334,23 @@ class DeepSeekCoTHandler(InferenceHandler):
             return import_head + matches[-1]
         return "None"
 
+    def prover_formalize_problem(self, lean4_code, tokenizer):
+        formal_statement = lean4_code.split(":= by")[0] + ":= by sorry"
+        prompt = F"Translate a structured mathematical problem into a Lean 4 theorem with a placeholder proof. Please carefully consider and add necessary premises such that the problem statement are true, dense and general. Only need write exactly one Lean4 snippet which contain problem statement. Don't need solve or analyze problem for solving process. Here is the problem \n\n ```lean4\n{formal_statement}``` \n\n"
+
+        messages = [
+            {"role": "user", "content": prompt}
+        ]
+        text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        return text, messages
+
     def prover_inference(self, lean4_code, tokenizer):
         formal_statement = lean4_code.split(":= by")[0] + ":= by sorry" # include sorry https://huggingface.co/deepseek-ai/DeepSeek-Prover-V2-7B
-        prompt = F"Complete the following Lean 4 code:\n\n```lean4\n{formal_statement}```\n\nBefore producing the Lean 4 code to formally prove the given theorem, provide a detailed proof plan outlining the main proof steps and strategies.\nThe plan should highlight key ideas, intermediate lemmas, and proof structures that will guide the construction of the final formal proof."
+        prompt = F"Complete the following Lean 4 code:\n\n```lean4\n{formal_statement}```\n\nBefore producing the Lean 4 code to formally prove the given theorem, provide a detailed lemma-based proof plan outlining the main proof steps and strategies.\nThe plan should highlight key ideas, intermediate lemmas, and proof structures that will guide the construction of the final formal proof. Your proof plan and lean4 code should follow lemma-based style."
         messages = [
             {"role": "user", "content": prompt}
         ]
@@ -375,7 +387,6 @@ class DeepSeekCoTHandler(InferenceHandler):
 
         prompt_str = tokenizer.apply_chat_template(current_messages, tokenize=False, add_generation_prompt=True)
         return prompt_str, current_messages
-
 
 class DeepSeekNonCoTHandler(InferenceHandler):
     def __init__(self):

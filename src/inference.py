@@ -8,6 +8,7 @@ import argparse
 from tqdm import tqdm
 import pandas as pd
 from utils import *
+import pdb
 
 # if __name__ == "__main__":
 from huggingface_hub import login
@@ -41,11 +42,13 @@ seed = random.randint(1, 99999)
 if args.correction_round == 0:
     assert args.input_path != "" # if not doing revision, should have input jsonl
 
+# In case correction_round > 0 and don't have actual_previous_run_output_dir the we assume output in output_dir
 actual_previous_run_output_dir = args.previous_run_output_dir # output dir, new time string or not
 if args.correction_round > 0 and not actual_previous_run_output_dir:
     print(f"Info: --previous_run_output_dir not specified for correction round {args.correction_round}. "
             f"Assuming previous round's files are in current --output_dir: {args.output_dir}")
     actual_previous_run_output_dir = args.output_dir
+
 
 model_name = args.model_path
 hf_tokenizer_for_chat_template = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
@@ -67,24 +70,36 @@ output_file_path_records = os.path.join(args.output_dir, f'full_records{records_
 output_file_path_inference_codes = os.path.join(args.output_dir, f'to_inference_codes{records_file_suffix}.json')
 
 items_for_llm_processing = []
-if args.correction_round > 0:
+if args.correction_round > 1:
     if not actual_previous_run_output_dir:  # Should have been set or exited if R0
         print("Error: previous_run_output_dir logic failed for correction round.")
         exit(1)
     items_for_llm_processing = load_data_for_correction(actual_previous_run_output_dir, args.correction_round, args.n, args.base_output_template)
-else:  # Initial inference (Round 0)
+elif args.correction_round == 0:
     if not args.input_path:
         print("Error: --input_path is required for initial inference (correction_round == 0).")
         exit(1)
     initial_data_list = handler.load_split(args.input_path, args.split)
-
+    # Initiate proof problem
     for idata_orig in initial_data_list:
         origin_id = idata_orig.get("origin_problem_id", idata_orig.get('problem_id', idata_orig.get('name')))
-        # if not idata_orig.get("lean4_code"): continue
+        if not idata_orig.get("lean4_code"): continue
+        for ij in range(args.n):
+            item_for_attempt = idata_orig.copy()
+            item_for_attempt["origin_problem_id"] = origin_id
+            item_for_attempt["problem_id"] = f"{origin_id}_g{ij}"  # suffix for this specific attempt
+            item_for_attempt["id_maps"] = [{"origin_problem_id": origin_id},
+                                           {"generation_id": item_for_attempt["problem_id"]}]
+            items_for_llm_processing.append(item_for_attempt)
+else:
+    initial_data_list = handler.load_split(args.input_path, args.split)
+    for idata_orig in initial_data_list:
+        origin_id = idata_orig.get("origin_problem_id", idata_orig.get('problem_id', idata_orig.get('name')))
+        if not idata_orig.get("lean4_code"): continue
         for ij in range(args.n):
             item_for_attempt = idata_orig.copy() 
             item_for_attempt["origin_problem_id"] = origin_id
-            item_for_attempt["problem_id"] = f"{origin_id}_g{ij}"  # Suffix for this specific attempt
+            item_for_attempt["problem_id"] = f"{origin_id}_g{ij}"  # suffix for this specific attempt
             item_for_attempt["id_maps"] = [{"origin_problem_id": origin_id},
                                            {"generation_id": item_for_attempt["problem_id"]}]
             items_for_llm_processing.append(item_for_attempt)
@@ -118,7 +133,7 @@ for chunk_idx, current_chunk_input_items in enumerate(
     for i, item_data in enumerate(tqdm(current_chunk_input_items,
         desc=f"Preparing data...")):
         item_data["lean4_code"] = item_data["lean4_code"].split(":= by")[0] + ":= by sorry"
-        if args.correction_round > 0:
+        if args.correction_round > 1:
             error_str = get_error_str(
                 item_data.get('compiled_code_that_failed_in_prev_round', ''),
                 item_data.get('errors_for_compiled_code_from_prev_round', {}).get('errors', []),
@@ -126,18 +141,22 @@ for chunk_idx, current_chunk_input_items in enumerate(
             )
             prompt_str, messages_for_this = handler.generate_correction_prompt(
                 lean4_code_original_stmt=item_data["lean4_code"],
-                history_messages_from_prev_round=item_data.get("history_messages_from_prev_round_for_new_prompt",
-                                                                []),
+                history_messages_from_prev_round=item_data.get("history_messages_from_prev_round_for_new_prompt", []),
                 prev_round_llm_raw_output=item_data.get("prev_round_llm_raw_output_for_new_prompt", ""),
                 error_message_for_prev_round=error_str,
                 tokenizer=hf_tokenizer_for_chat_template,
                 current_correction_round_num=args.correction_round
             )
-        else:  # Initial inference
+        elif args.correction_round == 0:
+            prompt_str, messages_for_this = handler.prover_formalize_problem(
+                item_data["lean4_code"], hf_tokenizer_for_chat_template
+            )
+        else:  # Initial inference round 1
             prompt_str, messages_for_this = handler.prover_inference(
                 item_data["lean4_code"], hf_tokenizer_for_chat_template
             )
-        num_tokens = len(hf_tokenizer_for_chat_template.tokenize(prompt_str))  
+        breakpoint()
+        num_tokens = len(hf_tokenizer_for_chat_template.tokenize(prompt_str))
         # num_cot_tokens = len(hf_tokenizer_for_chat_template.tokenize(messages_for_this[1]["content"]))
         records.append({
             # "cot_token_nums": num_cot_tokens,
@@ -148,7 +167,7 @@ for chunk_idx, current_chunk_input_items in enumerate(
         })
 
     df_med = pd.DataFrame(records)
-    max_length = args.max_model_len * 3 / 4 # fixed to be Qwen
+    max_length = args.max_model_len * 3 / 4  # fixed to be Qwen
 
     to_process_df = df_med[df_med.token_nums <= max_length].reset_index(drop=True)
     print(F"In total {len(df_med)}, selected {len(to_process_df)} whose length is smaller than {max_length}")
